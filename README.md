@@ -4,6 +4,8 @@ An end-to-end analytics project simulating a modern logistics company's data eco
 
 ## 🚀 Project Overview
 
+![Logistics Dashboard](assets/dashboard_screenshot.png)
+
 This repository contains a full-stack data analytics solution to monitor, analyze, and optimize delivery operations across 25 Indian cities. It covers everything from raw data generation to interactive visualizations.
 
 ### Core Features
@@ -16,38 +18,52 @@ This repository contains a full-stack data analytics solution to monitor, analyz
 
 ---
 
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    %% Define Styles
+    classDef python fill:#3b82f6,stroke:#1e3a8a,stroke-width:2px,color:white
+    classDef db fill:#10b981,stroke:#047857,stroke-width:2px,color:white
+    classDef jupyter fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:white
+    classDef pbi fill:#facc15,stroke:#a16207,stroke-width:2px,color:black
+    classDef web fill:#0041F5,stroke:#1e3a8a,stroke-width:2px,color:white
+    
+    %% Nodes
+    A[Data Generator<br/>generate_dataset.py]:::python
+    B[(Raw CSV / SQLite<br/>logistics_orders.csv)]:::db
+    
+    subgraph Analysis & Engineering
+        C[Data Cleaning<br/>01_data_cleaning.ipynb]:::jupyter
+        D[EDA & Trends<br/>02_eda_analysis.ipynb]:::jupyter
+        E[KPI Engine & Features<br/>03_kpi_calculations.ipynb]:::jupyter
+    end
+    
+    F[Excel Report<br/>logistics_summary.xlsx]:::db
+    G[Power BI Dashboard<br/>powerbi_data.csv]:::pbi
+    H[Web Dashboard UI<br/>HTML/CSS/JS]:::web
+    
+    %% Flows
+    A -->|50K Records| B
+    B -->|SQL Queries| C
+    C -->|Clean Data| D
+    D -->|Insights| E
+    E -->|Summary Stats| F
+    E -->|KPI Exports| G
+    E -->|Metrics| H
+```
+
 ## 📁 Repository Structure
 
 ```text
 Logistics/
-├── data/
-│   ├── generate_dataset.py          # Script to generate synthetic data
-│   ├── logistics_orders.csv         # Generated 50K record dataset
-│   ├── logistics_orders_cleaned.csv # Cleaned dataset output from Notebook 01
-│   ├── data_dictionary.md           # Schema and column definitions
-│   └── kpi_*.csv                    # Various KPI summary exports
-│
-├── sql/
-│   ├── create_tables.sql            # DDL for SQLite/MySQL/PostgreSQL
-│   └── analytics_queries.sql        # 15 Advanced analytical queries
-│
-├── notebooks/
-│   ├── 01_data_cleaning.ipynb       # Data validation and imputation
-│   ├── 02_eda_analysis.ipynb        # Statistical analysis and visualization
-│   └── 03_kpi_calculations.ipynb    # Feature engineering and KPI logic
-│
-├── excel/
-│   └── logistics_summary.xlsx       # Formatted multi-sheet summary workbook
-│
-├── powerbi/
-│   ├── powerbi_guide.md             # Step-by-step dashboard build guide
-│   ├── dax_measures.md              # 30+ DAX measure definitions
-│   └── powerbi_data.csv             # Power BI optimized dataset
-│
-└── dashboard/
-    ├── index.html                   # Dashboard UI
-    ├── style.css                    # Porter.in inspired CSS
-    └── app.js                       # Chart.js visualization logic
+├── data/          # Synthetic datasets, generators, and data dictionaries
+├── sql/           # DDL schemas and 15+ analytical SQL queries
+├── notebooks/     # Jupyter notebooks for Cleaning, EDA, and Feature Engineering
+├── excel/         # Formatted KPI summary workbooks
+├── powerbi/       # DAX measures and Power BI build instructions
+├── assets/        # Screenshots and brand assets
+└── dashboard/     # Custom Porter.in-inspired interactive web dashboard
 ```
 
 ---
