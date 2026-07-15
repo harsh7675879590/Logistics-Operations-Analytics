@@ -4,7 +4,7 @@ An end-to-end analytics project simulating a modern logistics company's data eco
 
 ## 🚀 Project Overview
 
-![Logistics Dashboard](assets/dashboard_screenshot.png)
+![Logistics Dashboard](assets/dashboard_screenshot_v2.png)
 
 This repository contains a full-stack data analytics solution to monitor, analyze, and optimize delivery operations across 25 Indian cities. It covers everything from raw data generation to interactive visualizations.
 
