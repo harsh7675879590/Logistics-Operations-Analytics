@@ -4,7 +4,7 @@
  */
 
 // ─── Constants & Styling ─────────────────────────────────────────────────────
-const DATA_URL = '../powerbi/powerbi_data.csv';
+const DATA_URL = '../data/logistics_orders.csv';
 
 // Premium Color Palette matching Porter.in Light Theme
 const COLORS = {
@@ -100,7 +100,7 @@ function populateFilters() {
     document.getElementById('cityFilter').addEventListener('change', applyFilters);
     document.getElementById('vehicleFilter').addEventListener('change', applyFilters);
     document.getElementById('resetFilters').addEventListener('click', () => {
-        document.getElementById('dateStart').value = '2024-01-01';
+        document.getElementById('dateStart').value = '2023-01-01';
         document.getElementById('dateEnd').value = '2024-12-31';
         document.getElementById('cityFilter').value = 'all';
         document.getElementById('vehicleFilter').value = 'all';
