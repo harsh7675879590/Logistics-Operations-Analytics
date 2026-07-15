@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistics Operations Dashboard | Porter.in</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header__brand">
+            <div class="header__logo">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="3" width="15" height="13"></rect>
+                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                </svg>
+            </div>
+            <div>
+                <h1 class="header__title">Logistics Ops Center</h1>
+                <div class="header__subtitle">Real-time Performance Dashboard</div>
+            </div>
+        </div>
+        <div class="header__actions">
+            <span class="header__badge">System Online</span>
+        </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="filters">
+        <div class="filter-group">
+            <span class="filter-group__label">Date Range</span>
+            <input type="date" id="dateStart" class="filter-date" value="2024-01-01">
+            <span style="color: var(--text-muted)">to</span>
+            <input type="date" id="dateEnd" class="filter-date" value="2024-12-31">
+        </div>
+        <div class="filter-group">
+            <span class="filter-group__label">City</span>
+            <select id="cityFilter" class="filter-select">
+                <option value="all">All Cities</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <span class="filter-group__label">Vehicle</span>
+            <select id="vehicleFilter" class="filter-select">
+                <option value="all">All Vehicles</option>
+                <option value="Bike">Bike</option>
+                <option value="Auto">Auto</option>
+                <option value="Mini Truck">Mini Truck</option>
+                <option value="Truck">Truck</option>
+            </select>
+        </div>
+        <button id="resetFilters" class="filter-reset">Reset Filters</button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main">
+        
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-card__icon">💰</div>
+                <div class="kpi-card__label">Total Revenue</div>
+                <div class="kpi-card__value" id="kpiRevenue">₹0</div>
+                <div class="kpi-card__trend kpi-card__trend--up" id="kpiRevenueTrend">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                    <span>---%</span>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-card__icon">📦</div>
+                <div class="kpi-card__label">Total Orders</div>
+                <div class="kpi-card__value" id="kpiOrders">0</div>
+                <div class="kpi-card__trend kpi-card__trend--up" id="kpiOrdersTrend">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                    <span>---%</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-card__icon">⏱️</div>
+                <div class="kpi-card__label">Avg Delivery Time</div>
+                <div class="kpi-card__value" id="kpiDeliveryTime">0 min</div>
+                <div class="kpi-card__trend kpi-card__trend--down" id="kpiTimeTrend">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
+                    <span>---%</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-card__icon">🚫</div>
+                <div class="kpi-card__label">Cancellation Rate</div>
+                <div class="kpi-card__value" id="kpiCancelRate">0.0%</div>
+                <div class="kpi-card__trend kpi-card__trend--down" id="kpiCancelTrend">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"></polyline><polyline points="16 17 22 17 22 11"></polyline></svg>
+                    <span>---%</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-card__icon">✅</div>
+                <div class="kpi-card__label">On-Time Delivery</div>
+                <div class="kpi-card__value" id="kpiOnTime">0.0%</div>
+                <div class="kpi-card__trend kpi-card__trend--up" id="kpiOnTimeTrend">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                    <span>---%</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-card__icon">💵</div>
+                <div class="kpi-card__label">Avg Order Value</div>
+                <div class="kpi-card__value" id="kpiAOV">₹0</div>
+                <div class="kpi-card__trend kpi-card__trend--up" id="kpiAOVTrend">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+                    <span>---%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 1 -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <div>
+                        <h2 class="chart-card__title">Revenue Trend</h2>
+                        <div class="chart-card__subtitle">Monthly recurring revenue over time</div>
+                    </div>
+                    <span class="chart-card__badge">Financial</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <div>
+                        <h2 class="chart-card__title">Top Cities by Orders</h2>
+                        <div class="chart-card__subtitle">Highest performing logistics markets</div>
+                    </div>
+                    <span class="chart-card__badge">Geospatial</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="cityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row 2 -->
+        <div class="chart-grid">
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <div>
+                        <h2 class="chart-card__title">Delivery Time Distribution</h2>
+                        <div class="chart-card__subtitle">Average actual vs estimated delivery time</div>
+                    </div>
+                    <span class="chart-card__badge">Operations</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="deliveryTimeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <div>
+                        <h2 class="chart-card__title">Cancellation Breakdown</h2>
+                        <div class="chart-card__subtitle">Primary reasons for order cancellations</div>
+                    </div>
+                    <span class="chart-card__badge">Quality</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="cancelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Row (Table + Chart) -->
+        <div class="chart-grid" style="grid-template-columns: 1fr 1.5fr;">
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <div>
+                        <h2 class="chart-card__title">Peak Order Hours</h2>
+                        <div class="chart-card__subtitle">24-hour volume distribution</div>
+                    </div>
+                    <span class="chart-card__badge">Capacity</span>
+                </div>
+                <div class="chart-container chart-container--tall">
+                    <canvas id="peakHourChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-card__header">
+                    <div>
+                        <h2 class="chart-card__title">Top Driver Performance</h2>
+                        <div class="chart-card__subtitle">Ranked by composite score & ratings</div>
+                    </div>
+                    <span class="chart-card__badge">Workforce</span>
+                </div>
+                <div class="chart-container chart-container--tall" style="overflow-y: auto;">
+                    <table class="driver-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Driver Name</th>
+                                <th>Trips</th>
+                                <th>On-Time %</th>
+                                <th>Rating</th>
+                                <th>Revenue generated</th>
+                            </tr>
+                        </thead>
+                        <tbody id="driverTableBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        Logistics Operations Analytics Dashboard &bull; Designed for Porter.in scale operations
+    </footer>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
