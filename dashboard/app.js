@@ -21,17 +21,19 @@ const COLORS = {
     gridLines: '#e2e8f0'
 };
 
-// Global Chart Settings
-Chart.defaults.color = COLORS.textMuted;
-Chart.defaults.font.family = "'Inter', sans-serif";
-Chart.defaults.scale.grid.color = COLORS.gridLines;
-Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(255, 255, 255, 0.95)';
-Chart.defaults.plugins.tooltip.titleColor = COLORS.text;
-Chart.defaults.plugins.tooltip.bodyColor = COLORS.text;
-Chart.defaults.plugins.tooltip.padding = 10;
-Chart.defaults.plugins.tooltip.cornerRadius = 8;
-Chart.defaults.plugins.tooltip.borderColor = '#e2e8f0';
-Chart.defaults.plugins.tooltip.borderWidth = 1;
+// Global Chart Settings (applied safely if Chart is loaded)
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.color = COLORS.textMuted;
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.scale.grid.color = COLORS.gridLines;
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+    Chart.defaults.plugins.tooltip.titleColor = COLORS.text;
+    Chart.defaults.plugins.tooltip.bodyColor = COLORS.text;
+    Chart.defaults.plugins.tooltip.padding = 10;
+    Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    Chart.defaults.plugins.tooltip.borderColor = '#e2e8f0';
+    Chart.defaults.plugins.tooltip.borderWidth = 1;
+}
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let rawData = [];
@@ -43,15 +45,86 @@ const formatCurrency = (val) => new Intl.NumberFormat('en-IN', { style: 'currenc
 const formatNumber = (val) => new Intl.NumberFormat('en-IN').format(val);
 const formatPercent = (val) => `${(val).toFixed(1)}%`;
 
+// Candidate paths for dataset to support running server from root or from /dashboard
+const CANDIDATE_URLS = [
+    'data/logistics_orders.csv',
+    '../data/logistics_orders.csv',
+    '/data/logistics_orders.csv',
+    './data/logistics_orders.csv'
+];
+
 // ─── Initialization ──────────────────────────────────────────────────────────
 async function init() {
+    const badge = document.querySelector('.header__badge');
+    if (badge) {
+        badge.textContent = 'Loading Data...';
+        badge.style.background = '#f59e0b';
+        badge.style.color = '#ffffff';
+    }
+
+    if (typeof Papa === 'undefined' || typeof Chart === 'undefined') {
+        const errorHtml = `
+            <div style="text-align:center; padding: 60px 20px; max-width: 600px; margin: 40px auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                <h2 style="color: #ef4444; margin-bottom: 12px;">CDN Resources Blocked or Offline</h2>
+                <p style="color: #64748b; line-height: 1.6;">
+                    Chart.js or PapaParse could not be loaded from CDN. Please check your internet connection and reload the page.
+                </p>
+            </div>
+        `;
+        document.querySelector('.main').innerHTML = errorHtml;
+        return;
+    }
+
+    let csvText = null;
+    let successfulUrl = null;
+
+    for (const url of CANDIDATE_URLS) {
+        try {
+            const response = await fetch(url);
+            if (response.ok) {
+                const text = await response.text();
+                // Validate that response is CSV, not HTML 404 page
+                if (text && !text.trim().toLowerCase().startsWith('<!doctype') && !text.trim().toLowerCase().startsWith('<html')) {
+                    csvText = text;
+                    successfulUrl = url;
+                    break;
+                }
+            }
+        } catch (e) {
+            // Continue probing next URL
+        }
+    }
+
+    if (!csvText) {
+        console.error("Could not locate logistics_orders.csv across candidate paths:", CANDIDATE_URLS);
+        const mainEl = document.querySelector('.main');
+        if (mainEl) {
+            mainEl.innerHTML = `
+                <div style="text-align:center; padding: 50px 20px; max-width: 650px; margin: 40px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+                    <div style="font-size: 40px; margin-bottom: 16px;">⚠️</div>
+                    <h2 style="color: #ef4444; margin-bottom: 12px; font-weight: 700;">Could Not Load Logistics Dataset</h2>
+                    <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
+                        The browser cannot access <code>logistics_orders.csv</code>. This happens when opened directly using <code>file://</code> (due to browser CORS security) or when the server root does not contain the data file.
+                    </p>
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: left; font-family: monospace; font-size: 0.85rem; color: #0f172a; margin-bottom: 20px;">
+                        # 1. Open your terminal in the project root folder:<br>
+                        cd c:\\Users\\harsh\\OneDrive\\Desktop\\PRESS\\Logistics<br><br>
+                        # 2. Run the HTTP server:<br>
+                        python -m http.server 8000<br><br>
+                        # 3. Open this URL in your browser:<br>
+                        <a href="http://localhost:8000/dashboard/" target="_blank" style="color: #0041F5; text-decoration: underline;">http://localhost:8000/dashboard/</a>
+                    </div>
+                </div>
+            `;
+        }
+        if (badge) {
+            badge.textContent = 'Data Offline';
+            badge.style.background = '#ef4444';
+        }
+        return;
+    }
+
     try {
-        // Since we are running locally without a web server via file://, 
-        // fetching local CSV might fail due to CORS. 
-        // We will attempt to fetch, if it fails, we fall back to a sample summary data mode or instruct user.
-        const response = await fetch(DATA_URL);
-        const csvText = await response.text();
-        
         Papa.parse(csvText, {
             header: true,
             dynamicTyping: true,
@@ -69,17 +142,16 @@ async function init() {
                 
                 populateFilters();
                 applyFilters();
+
+                if (badge) {
+                    badge.textContent = `Online • ${formatNumber(rawData.length)} Orders`;
+                    badge.style.background = '';
+                    badge.style.color = '';
+                }
             }
         });
     } catch (error) {
-        console.error("Error loading CSV:", error);
-        document.querySelector('.main').innerHTML = `
-            <div style="text-align:center; padding: 50px; color: var(--accent-red);">
-                <h2>Data Loading Error</h2>
-                <p>Could not load the dataset. If opening directly from file://, browser security blocks loading local CSV files.</p>
-                <p>Please run a local server: <code>python -m http.server</code> and access via <code>http://localhost:8000/dashboard/</code></p>
-            </div>
-        `;
+        console.error("Error parsing CSV:", error);
     }
 }
 
