@@ -96,33 +96,83 @@ async function init() {
     }
 
     if (!csvText) {
-        console.error("Could not locate logistics_orders.csv across candidate paths:", CANDIDATE_URLS);
-        const mainEl = document.querySelector('.main');
-        if (mainEl) {
-            mainEl.innerHTML = `
-                <div style="text-align:center; padding: 50px 20px; max-width: 650px; margin: 40px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
-                    <div style="font-size: 40px; margin-bottom: 16px;">⚠️</div>
-                    <h2 style="color: #ef4444; margin-bottom: 12px; font-weight: 700;">Could Not Load Logistics Dataset</h2>
-                    <p style="color: #475569; font-size: 0.95rem; line-height: 1.6; margin-bottom: 20px;">
-                        The browser cannot access <code>logistics_orders.csv</code>. This happens when opened directly using <code>file://</code> (due to browser CORS security) or when the server root does not contain the data file.
-                    </p>
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: left; font-family: monospace; font-size: 0.85rem; color: #0f172a; margin-bottom: 20px;">
-                        # 1. Open your terminal in the project root folder:<br>
-                        cd c:\\Users\\harsh\\OneDrive\\Desktop\\PRESS\\Logistics<br><br>
-                        # 2. Run the HTTP server:<br>
-                        python -m http.server 8000<br><br>
-                        # 3. Open this URL in your browser:<br>
-                        <a href="http://localhost:8000/dashboard/" target="_blank" style="color: #0041F5; text-decoration: underline;">http://localhost:8000/dashboard/</a>
-                    </div>
-                </div>
-            `;
-        }
+        console.warn("Automatic fetch failed. Displaying local file chooser & server helper.");
+        showDataNoticeModal();
         if (badge) {
-            badge.textContent = 'Data Offline';
-            badge.style.background = '#ef4444';
+            badge.textContent = 'Awaiting Data';
+            badge.style.background = '#f59e0b';
+            badge.style.color = '#ffffff';
         }
         return;
     }
+
+    parseAndRender(csvText);
+}
+
+function showDataNoticeModal() {
+    let modal = document.getElementById('dataNoticeModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'dataNoticeModal';
+        modal.innerHTML = `
+            <div style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+                <div style="background: #ffffff; border-radius: 16px; max-width: 580px; width: 100%; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.25); border: 1px solid #e2e8f0; text-align: center;">
+                    <div style="font-size: 38px; margin-bottom: 12px;">📊</div>
+                    <h2 style="color: #0f172a; font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;">Logistics Dataset Access</h2>
+                    <p style="color: #64748b; font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
+                        It looks like you opened <code>index.html</code> directly (via <code>file://</code>). Browser security policies restrict JavaScript from reading local disk files directly without either a local server or explicit file selection.
+                    </p>
+
+                    <!-- Option 1: Direct File Selection (Zero Setup) -->
+                    <div style="background: #f0f7ff; border: 1.5px dashed #0041F5; border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center;">
+                        <div style="font-weight: 600; color: #0041F5; margin-bottom: 6px; font-size: 1rem;">⚡ Option 1: Instant Load (Zero Setup)</div>
+                        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 14px;">Select the dataset file directly from your <code>data/</code> folder:</p>
+                        <label style="display: inline-flex; align-items: center; gap: 8px; background: #0041F5; color: #ffffff; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s;">
+                            <span>📁 Choose logistics_orders.csv</span>
+                            <input type="file" id="localCsvInput" accept=".csv" style="display: none;">
+                        </label>
+                    </div>
+
+                    <!-- Option 2: Run via HTTP server -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; text-align: left;">
+                        <div style="font-weight: 600; color: #334155; margin-bottom: 6px; font-size: 0.9rem;">🌐 Option 2: Run via Local Server</div>
+                        <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 8px;">
+                            Double-click <code>start_dashboard.bat</code> in the project folder, or open in browser:
+                        </p>
+                        <div style="font-family: monospace; font-size: 0.82rem; background: #0f172a; color: #38bdf8; padding: 10px 14px; border-radius: 6px;">
+                            http://localhost:8000/dashboard/
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const input = document.getElementById('localCsvInput');
+        if (input) {
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const badge = document.querySelector('.header__badge');
+                    if (badge) badge.textContent = 'Parsing file...';
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        modal.style.display = 'none';
+                        parseAndRender(event.target.result);
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+    } else {
+        modal.style.display = 'block';
+    }
+}
+
+function parseAndRender(csvText) {
+    const badge = document.querySelector('.header__badge');
+    const modal = document.getElementById('dataNoticeModal');
+    if (modal) modal.style.display = 'none';
 
     try {
         Papa.parse(csvText, {
